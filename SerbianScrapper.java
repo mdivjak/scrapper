@@ -9,6 +9,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -56,9 +57,6 @@ public class SerbianScrapper extends Scrapper {
 					}
 				}
 			}
-//			Elements els = doc.select(LAST_REFERENCE_SELECTOR);
-//			if(els.size() == 0) throw new Errors.NoUrlException();
-//			String link = els.get(0).attr("ng-click");
 			
 			throw new Errors.NoUrlException();
 		}
@@ -95,10 +93,25 @@ public class SerbianScrapper extends Scrapper {
 		}
 		
 		public static String getLastUpdateDate(Document doc) throws NoJsonException, NoUrlException, IOException, NoDateException {
-//			JsonObject jsonObject = Util.getJsonObject(doc);
-			String link = Util.getUrl(doc);
-			Document dateDoc = Jsoup.connect(link).get();
-			String date = Util.extractLastUpdateDate(dateDoc);
+			JsonObject jsonObject = Util.getJsonObject(doc);
+			JsonArray array = jsonObject.get("htmlLinks").getAsJsonArray();
+			String date;
+			if(array.size() == 0 || array.size() == 1) {
+				date = Util.getMetaDate(doc);
+			} else {
+				String link = Util.getUrl(doc);
+				Document dateDoc = Jsoup.connect(link).get();
+				date = Util.extractLastUpdateDate(dateDoc);
+			}
+			return date;
+		}
+		
+		public static String getMetaDate(Document doc) throws NoDateException {
+			Elements els = doc.select("meta[property=\"eli:date_document\"]");
+			if(els.size() == 0) throw new NoDateException();
+			String[] content = els.get(0).attr("content").split("-");
+			if(content.length != 3) throw new NoDateException();
+			String date = content[2] + "." + content[1] + "." + content[0] + ".";
 			return date;
 		}
 		
@@ -122,9 +135,15 @@ public class SerbianScrapper extends Scrapper {
 		try {
 			JsonObject jsonObject = Util.getJsonObject(doc);
 			String name = jsonObject.get("baseTitle").getAsString();
-			String link = Util.getUrl(doc);
-			Document dateDoc = Jsoup.connect(link).get();
-			String date = Util.extractLastUpdateDate(dateDoc);
+			JsonArray array = jsonObject.get("htmlLinks").getAsJsonArray();
+			String date;
+			if(array.size() == 0 || array.size() == 1) {
+				date = Util.getMetaDate(doc);
+			} else {
+				String link = Util.getUrl(doc);
+				Document dateDoc = Jsoup.connect(link).get();
+				date = Util.extractLastUpdateDate(dateDoc);
+			}
 			return new Result(name, date);
 		} catch (NoJsonException | NoUrlException e) {
 			throw new Errors.BadDataException();

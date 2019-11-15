@@ -1,13 +1,13 @@
 package scraping;
 
 import java.io.IOException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 
 import scraping.Errors.NoDateException;
 import scraping.Errors.NoJsonException;
@@ -34,81 +34,54 @@ public class Test {
 				"http://www.pravno-informacioni-sistem.rs/SlGlasnikPortal/eli/rep/sgrs/ministarstva/pravilnik/1993/33/1/reg",
 				"http://www.pravno-informacioni-sistem.rs/SlGlasnikPortal/eli/rep/sgsrs/drugidrzavniorganiorganizacije/uputstvo/1977/3/1/reg"};
 		Timer timer = new Timer(); timer.start();
-/*
+/* 0 odakle je izvukao datum 29.12.2015., treba 30.12.2015.
+ * 4 netacno je izvukao datum 14.03.2019., treba 23.05.2019.
  * 6 get document +
  * 8 datum + nije uvek radio selektor pa sam pretrazivao po tagu h5 koji sadrzi tekst Osnovni tekst i unuce njegovog brata sadrzi datum
  * 9 get document | datum
  * 10 datum + nije radio regex za vadjenje datuma jer je jednocifren broj dana u mesecu
  * 12 datum atribut je href, sadrzi los link
- * 13 datum
- * 14 datum
- * 15 datum
+ * 13 datum +
+ * 14 datum +
+ * 15 datum +
  * */
-//		try {
-			Document doc;
-			int j = 0;
+		try {
+			Logger.log("log\\results.csv", "Rezultati");
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		for(int i = 0; i < links.length; i++) {
+			Document doc; int j = 0;
 			while(true) {
+				System.out.println("Try " + (++j));
 				try {
-					doc = Jsoup.connect("http://www.pravno-informacioni-sistem.rs/SlGlasnikPortal/eli/rep/sgrs/ministarstva/pravilnik/1993/33/1").get();
+					doc = Jsoup.connect(links[i]).get();
 					break;
-				} catch(IOException err) {
-					System.out.println("Try " + (++j));
+				} catch(IOException e) {}
+			}
+				try {
+					Logger.log("log\\site.html", doc.toString());
+				} catch (IOException e) {}
+				String name, date;
+				try {
+					name = SerbianScrapper.Util.getLawName(doc);
+				} catch(NoNameException err) {
+					name = "FAILED";
 				}
-			}
-			try {
-				Logger.log("log\\site.html", doc.toString());
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-//			Elements els = doc.select("h5");
-//			for(Element e : els) {
-//				if(e.text().contains("Основни текст")) {
-//					Element a = e.nextElementSibling().child(0).child(0);
-//					System.out.println(a);
-//					String link = "www.pravno-informacioni-sistem.rs" + a.attr("href");
-//					System.out.println(link);
-//					while(true) {
-//						try {
-//							Document docDate = Jsoup.connect(link).get();
-//							break;
-//						} catch(IOException err) {
-//							System.err.println("Again");
-//						}
-//					}
-//					Logger.log("log\\site2.html", doc.toString());
-//				}
-//			}
-//		} catch (IOException e ) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		
-//		for(int i = 0; i < links.length; i++) {
-//			Document doc; int j = 0;
-//			while(true) {
-//				System.out.println("Try " + (++j));
-//				try {
-//					doc = Jsoup.connect(links[i]).get();
-//					break;
-//				} catch(IOException e) {}
-//			}
-//				try {
-//					Logger.log("log\\site.html", doc.toString());
-//				} catch (IOException e) {}
-//				String name, date;
-//				try {
-//					name = SerbianScrapper.Util.getLawName(doc);
-//				} catch(NoNameException err) {
-//					name = "FAILED";
-//				}
-//				try {
-//					date = SerbianScrapper.Util.getLastUpdateDate(doc);
-//				} catch(NoJsonException | NoUrlException | IOException | NoDateException err) {
-//					date = "FAILED";
-//				}
-//				System.out.println(i + ". " + name + "\t "+ date);			
-//		}
+				try {
+					date = SerbianScrapper.Util.getLastUpdateDate(doc);
+				} catch(NoJsonException | NoUrlException | IOException | NoDateException err) {
+					date = "FAILED";
+				}
+				System.out.println(i + ". " + name + "\t "+ date);
+				try {
+					Logger.loga("log\\results.csv", links[i] + ",\"" + name + "\"," + date);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+		}
 		System.out.println("done");
 	}
 }
